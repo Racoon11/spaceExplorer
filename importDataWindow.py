@@ -1,42 +1,32 @@
-from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QFileDialog, QComboBox, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QFileDialog, QComboBox, QHBoxLayout, QListWidget
 from PyQt6.QtGui import QPixmap
 
 import os
 import sys
 import resources
 
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
+from styles import *
 
-    return os.path.join(base_path, relative_path)
 
 class ImportDataWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Форма ввода данных")
-        # self.setFixedSize(QSize(400, 150))
-        self.setGeometry(300, 300, 400, 300)
+        self.setFixedSize(700, 700)
 
-        # Тип (выбор из списка)
+        # === ЛЕВАЯ ЧАСТЬ: Форма для добавления датчика ===
+        left_widget = QWidget()
+        left_layout = QVBoxLayout()
+
+        # Выбор типа датчика
         self.type_label = QLabel("Выберите датчик:")
-
-        self.image_label = QLabel(self)
-        # self.image_label.setGeometry(50, 50, 500, 200)
-        pixmap = QPixmap(':/images/dots2.jpg').scaledToWidth(200)
-
-        self.image_label.setPixmap(pixmap)
-        
-
-        # self.image_label.setScaledContents(True)
-        # self.image_label.resize(300, 200)  # Set desired size
-
         self.type_combo = QComboBox()
         self.type_combo.addItems(['-'] + list(map(str, range(1, 12))))
+
+        # Отображение изображения
+        self.image_label = QLabel(self)
+        pixmap = QPixmap(':/images/dots2.jpg').scaledToWidth(200)
+        self.image_label.setPixmap(pixmap)
 
         # Путь к файлу
         self.file_path_edit = QLineEdit()
@@ -45,7 +35,7 @@ class ImportDataWindow(QWidget):
         self.browse_button.clicked.connect(self.select_file)
 
         # Кнопка сохранить
-        self.save_button = QPushButton("Сохранить")
+        self.save_button = QPushButton("Добавить")
         self.save_button.clicked.connect(self.save_form_data)
 
         # Компоновка для файла
@@ -53,16 +43,34 @@ class ImportDataWindow(QWidget):
         file_layout.addWidget(self.file_path_edit)
         file_layout.addWidget(self.browse_button)
 
-         # Основная компоновка
-        layout = QVBoxLayout()
-        
-        layout.addWidget(self.image_label)
-        layout.addWidget(self.type_label)
-        layout.addWidget(self.type_combo)
-        layout.addLayout(file_layout)
-        layout.addWidget(self.save_button)
+        # Установка layout для левой части
+        left_layout.addWidget(self.image_label)
+        left_layout.addWidget(self.type_label)
+        left_layout.addWidget(self.type_combo)
+        left_layout.addLayout(file_layout)
+        left_layout.addWidget(self.save_button)
+        left_widget.setLayout(left_layout)
 
-        self.setLayout(layout)
+        # === ПРАВАЯ ЧАСТЬ: Список выбранных файлов ===
+        self.list_widget = QListWidget()
+        self.list_widget.setStyleSheet("""
+            QListWidget::item:selected {
+                background-color: #d0e7ff;
+                color: black;
+            }
+            QListWidget::item:hover {
+                background-color: #f0f0f0;
+            }
+        """)
+
+        # === ОБЪЕДИНЕНИЕ ЛЕВОЙ И ПРАВОЙ ЧАСТИ ===
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(left_widget, stretch=2)   # Левая часть занимает 2/3
+        main_layout.addWidget(self.list_widget, stretch=3)  # Правая — 1/3
+        
+        self.setLayout(main_layout)
+        apply_styles(self)
+        
 
     def select_file(self):
         """Открытие диалога выбора файла"""
@@ -76,6 +84,12 @@ class ImportDataWindow(QWidget):
         """Сохранение данных формы"""
         selected_type = self.type_combo.currentText()
         file_path = self.file_path_edit.text()
+
+        if file_path:
+            item_text = f"[{selected_type}] {file_path}"
+            self.list_widget.addItem(item_text)
+            self.file_path_edit.clear()
+            self.type_combo.setCurrentIndex(0)
 
         print("Выбранный тип:", selected_type)
         print("Путь к файлу:", file_path)

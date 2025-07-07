@@ -56,7 +56,10 @@ class MainWindow(QMainWindow):
 
         file_path = "data//experiments.json"
         if os.path.exists(file_path):
-            experiments = load_experiments(file_path)['experiments']
+            old_experiments = load_experiments(file_path)['experiments']
+            experiments = list(filter(lambda exp: os.path.exists(exp['path']), old_experiments))
+            save_experiments({"experiments": experiments},  file_path)
+            
         else:
             experiments = []
 
@@ -75,7 +78,6 @@ class MainWindow(QMainWindow):
             })
             item_widget = QWidget()
             item_layout = QVBoxLayout()
-            item_layout.setContentsMargins(5, 5, 5, 5)
             item_layout.setSpacing(2)
 
             name_label = QLabel(f"<b>{exp['name']}</b>")

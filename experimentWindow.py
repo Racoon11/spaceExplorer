@@ -13,8 +13,9 @@ class ExperimentWindow(QMainWindow):
         self.path = path
         self.setWindowTitle(f"Space explorer ({name})")
         # self.setFixedSize(QSize(400, 150))
-        self.setGeometry(300, 300, 900, 700)
+        self.setGeometry(700, 500, 900, 700)
         self.create_menu()
+        apply_styles(self)
 
     def create_menu(self):
         # Получаем строку меню
