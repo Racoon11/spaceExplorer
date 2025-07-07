@@ -1,0 +1,9 @@
+build
+data
+dist
+static
+trash
+*.jpg
+*.spec
+*.qrc
+*.ico
