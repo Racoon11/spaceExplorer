@@ -7,3 +7,4 @@ trash
 *.spec
 *.qrc
 *.ico
+__pycache__
