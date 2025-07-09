@@ -234,7 +234,7 @@ class MainWindow(QMainWindow):
     def show_expermient_window(self, name, path):
         self.close()
         self.experimentWindow = ExperimentWindow(name, path)
-        self.experimentWindow.show()
+        self.experimentWindow.showMaximized()
 
     def on_experiment_double_clicked(self, item):
         experiment_data = item.data(Qt.ItemDataRole.UserRole)

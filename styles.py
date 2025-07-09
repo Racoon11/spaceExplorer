@@ -73,6 +73,7 @@ def apply_styles(widget):
             background-color: #007acc;
             color: white;
             border: 1px solid #005c99;
+                         
         }
         
         QMenu::item:selected {
