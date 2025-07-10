@@ -1,10 +1,10 @@
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon
 
 import sys # Только для доступа к аргументам командной строки
 
 import resources
-from mainWIndow import *
+from mainWindow import *
 
 # app = QApplication(sys.argv)
 

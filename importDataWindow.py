@@ -1,22 +1,30 @@
-from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QFileDialog, QComboBox, QHBoxLayout, QListWidget
-from PyQt6.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QFileDialog, QComboBox, QHBoxLayout, QListWidget
+from PyQt5.QtGui import QPixmap
 
 import os
 import sys
 import resources
+import shutil
 
 from styles import *
+from myjson import *
 
 
 class ImportDataWindow(QWidget):
-    def __init__(self):
+    def __init__(self, path):
         super().__init__()
+
+        self.main_path = path
         self.setWindowTitle("Форма ввода данных")
-        self.setFixedSize(700, 700)
+        self.setFixedSize(700, 800)
 
         # === ЛЕВАЯ ЧАСТЬ: Форма для добавления датчика ===
         left_widget = QWidget()
         left_layout = QVBoxLayout()
+
+        # Имя файла
+        self.name_label = QLabel("Имя (укажите, если датчик '-')")
+        self.name_edit = QLineEdit()
 
         # Выбор типа датчика
         self.type_label = QLabel("Выберите датчик:")
@@ -45,6 +53,8 @@ class ImportDataWindow(QWidget):
 
         # Установка layout для левой части
         left_layout.addWidget(self.image_label)
+        left_layout.addWidget(self.name_label)
+        left_layout.addWidget(self.name_edit)
         left_layout.addWidget(self.type_label)
         left_layout.addWidget(self.type_combo)
         left_layout.addLayout(file_layout)
@@ -76,7 +86,12 @@ class ImportDataWindow(QWidget):
         """Открытие диалога выбора файла"""
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)   
-        file_name, _ = dialog.getOpenFileName(self, "Выбрать файл")
+        file_name, _ = dialog.getOpenFileName(
+            self,
+            "Выбрать файл",
+            "",  # начальный путь (можно оставить пустым)
+            "Текстовые файлы (*.txt);;CSV файлы (*.csv)"
+        )
         if file_name:
             self.file_path_edit.setText(file_name)
 
@@ -84,9 +99,23 @@ class ImportDataWindow(QWidget):
         """Сохранение данных формы"""
         selected_type = self.type_combo.currentText()
         file_path = self.file_path_edit.text()
-
+        name = self.name_edit.text()
+        if selected_type == '-' and not name:
+            return
+        if selected_type != '-':
+            name = selected_type
         if file_path:
-            item_text = f"[{selected_type}] {file_path}"
+            item_text = f"[{name}] {file_path}"
+            new_file_path = os.path.join(self.main_path, "data", f"{name}.csv")
+            shutil.copy(file_path, new_file_path)
+
+            info_file_path = os.path.join(self.main_path, 'info.json')
+            experiment_data = load_experiments(info_file_path)
+            if not experiment_data:
+                experiment_data = {"experiment_data": []}
+            experiment_data['experiment_data'].append({"name": name, 'type': selected_type, 'path': new_file_path})
+            save_experiments(experiment_data, info_file_path)
+
             self.list_widget.addItem(item_text)
             self.file_path_edit.clear()
             self.type_combo.setCurrentIndex(0)

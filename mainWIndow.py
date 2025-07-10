@@ -1,8 +1,8 @@
-from PyQt6.QtWidgets import (QWidget, QPushButton, QMainWindow, QLabel, QVBoxLayout,
+from PyQt5.QtWidgets import (QWidget, QPushButton, QMainWindow, QLabel, QVBoxLayout,
                              QTextEdit, QFileDialog, QMessageBox, QHBoxLayout,
                              QListWidget, QListWidgetItem, QFrame
                              )
-from PyQt6.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize, Qt
 
 
 import os
@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
             item_layout.setSpacing(2)
 
             name_label = QLabel(f"<b>{exp['name']}</b>")
+            name_label.setStyleSheet("font-size: 15px")
             path_label = QLabel(exp['path'])
             path_label.setStyleSheet("font-size: 10px; color: gray;")
 
@@ -227,6 +228,9 @@ class MainWindow(QMainWindow):
             experiment_data = load_experiments(file_path)
             experiments = experiment_data['experiments']
             experiments.append({"name": name, "path": folder_path})
+        with open(os.path.join(folder_path, "info.json"), 'w' ):
+            pass
+        os.makedirs(os.path.join(folder_path, 'data'))        
                 
         save_experiments(experiment_data, "data/experiments.json")
         window.show_expermient_window(name, path)
