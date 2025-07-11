@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-
+ 
         # === ПРАВАЯ ЧАСТЬ: Кнопки ===
         right_widget = QWidget()
         right_layout = QVBoxLayout()

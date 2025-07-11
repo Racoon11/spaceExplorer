@@ -1,17 +1,14 @@
 [project]
-name = "app"
+name = "spaceexplorer"
 version = "0.1.0"
 description = ""
 authors = [
     {name = "Trebias",email = "unitsss11@gmail.com"}
 ]
 readme = "README.md"
-requires-python = "<3.13, >=3.11"
+requires-python = ">=3.9"
 dependencies = [
-    "pyinstaller (>=6.14.2,<7.0.0)",
-    "pillow (>=11.3.0,<12.0.0)",
-    "matplotlib (>=3.10.3,<4.0.0)",
-    "pyqt6 (>=6.9.1,<7.0.0)",
+    "pyqt6 (>=6.9.1,<7.0.0)"
 ]
 
 

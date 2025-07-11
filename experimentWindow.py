@@ -49,7 +49,6 @@ class ChartItemWidget(QWidget):
     def plot(self):
         ax = self.figure.add_subplot(111)
         ax.clear()
-        times = list(range(10))
         ax.plot(self.data, label=self.title)
         # ax.set_title("График")
         ax.set_xlabel("Время")
@@ -143,6 +142,7 @@ class ExperimentWindow(QMainWindow):
         files = load_experiments(os.path.join(self.path, "info.json"))
         if not files: return 
         files = files['experiment_data']
+        self.menu_plots.clear()
         for fil in files:
             file_menu = self.menu_plots.addMenu(fil['name'])
             with open(fil['path']) as f:
@@ -169,7 +169,7 @@ class ExperimentWindow(QMainWindow):
             self.chosen_plots.pop(ind)
 
     def show_data_window(self):
-        self.new_window = ImportDataWindow(self.path)
+        self.new_window = ImportDataWindow(self.path, self)
         self.new_window.show()
     
     def about_program(self):
