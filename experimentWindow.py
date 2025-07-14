@@ -1,12 +1,7 @@
 from PyQt5.QtWidgets import (QMessageBox, QMainWindow, QVBoxLayout, QListWidgetItem, 
-                             QFrame, QSplitter, QSizePolicy, QGridLayout, 
+                             QFrame, QSplitter, 
                              QScrollArea)
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import Qt, QSize, QTimer
-
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
+from PyQt5.QtCore import Qt
 
 from pandas import read_csv
 
@@ -18,126 +13,9 @@ import sys
 from importDataWindow import *
 from styles import *
 from myjson import *
+from specialWidgets import *
 
 
-class ResponsiveTableWidget(QWidget):
-    def __init__(self, data, parent=None):
-        super().__init__(parent)
-        self.data = data
-        self.min_column_width = 200
-        self.min_columns = 3
-
-        self.layout = QGridLayout(self)
-        self.layout.setSpacing(10)
-        self.layout.setContentsMargins(5, 5, 5, 5)
-
-        self.setStyleSheet("""
-            QLabel {
-                padding: 8px;
-                min-height: 40px;
-            }
-            QFrame {
-                border: 1px solid #ddd;
-                margin: 2px;
-                background-color: #f9f9f9;
-            }
-        """)
-
-        self.resize_timer = QTimer()
-        self.resize_timer.setSingleShot(True)
-        self.resize_timer.timeout.connect(self.safe_populate)
-
-        self.populate()
-
-    def safe_populate(self):
-        """Только если таймер истёк"""
-        if not self.isVisible():
-            return
-        self.populate()
-
-    def populate(self):
-        """Очистка и заполнение таблицы"""
-        self.clear_layout(self.layout)
-
-        available_width = self.width()
-        max_columns = max(self.min_columns, available_width // self.min_column_width)
-
-        for i, (key, value) in enumerate(self.data):
-            row = i // max_columns
-            col = i % max_columns
-
-            label = QLabel(f"<b>{key}</b> = {value}")
-            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-
-            frame = QFrame()
-            frame_layout = QVBoxLayout(frame)
-            frame_layout.addWidget(label)
-            frame_layout.setContentsMargins(4, 4, 4, 4)
-            frame.setMinimumHeight(50)
-
-            self.layout.addWidget(frame, row, col)
-
-        self.updateGeometry()
-
-    def clear_layout(self, layout):
-        """Полное удаление всех виджетов из layout"""
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                widget = item.widget()
-                layout.removeWidget(widget)
-                widget.deleteLater()
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.resize_timer.start(200)  # Задержка перед обновлением
-
-
-class ChartItemWidget(QWidget):
-    def __init__(self, title, data, parent=None):
-        super().__init__(parent)
-
-        self.title = title
-        self.data = data
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Заголовок
-        # self.label = QLabel(title)
-        # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # layout.addWidget(self.label)
-
-        # График
-        self.figure = Figure(figsize=(5, 2), dpi=100)
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-
-        self.canvas.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Expanding
-        )
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.canvas)
-
-        self.plot()
-
-    def plot(self):
-        ax = self.figure.add_subplot(111)
-        ax.clear()
-        ax.plot(self.data, label=self.title)
-        # ax.set_title("График")
-        ax.set_xlabel("Время")
-        ax.legend()
-        ax.grid(True)
-        self.canvas.draw()
-        self.figure.tight_layout()
-        self.canvas.updateGeometry()
-
-    # def resizeEvent(self, event):
-    #     """Перерисовываем график при изменении размера виджета"""
-    #     self.canvas.resize(event.size())
-    #     self.canvas.draw()
 
 # Основное окно
 class ExperimentWindow(QMainWindow):
@@ -147,6 +25,8 @@ class ExperimentWindow(QMainWindow):
         self.name = name
         self.path = path
         self.chosen_plots = []
+        self.possible_metrics = {"max": max, "min": min, "mean": lambda x: round(sum(x)/len(x), 4)}
+        self.basic_metrics = ['max', 'min', 'mean']
         self.setWindowTitle(f"Space explorer ({name})")
 
         # self.setGeometry(200, 200, 800, 600)
@@ -165,20 +45,31 @@ class ExperimentWindow(QMainWindow):
         left_splitter.addWidget(self.list_widget)
 
 
-        data = [
-            ("HIC", "1234 м/с²"), ("HIC1", "5678 м/с²"), ("HIC2", "9101 м/с²"),
-            ("HIC3", "1121 м/с²"), ("HIC4", "3141 м/с²"), ("HIC5", "5161 м/с²"),
-            ("HIC6", "7181 м/с²"), ("HIC7", "9202 м/с²"),
-            ("HIC", "1234 м/с²"), ("HIC1", "5678 м/с²"), ("HIC2", "9101 м/с²"),
-            ("HIC3", "1121 м/с²"), ("HIC4", "3141 м/с²"), ("HIC5", "5161 м/с²"),
-            ("HIC6", "7181 м/с²"), ("HIC7", "9202 м/с²"),
-            ("HIC", "1234 м/с²"), ("HIC1", "5678 м/с²"), ("HIC2", "9101 м/с²"),
-            ("HIC3", "1121 м/с²"), ("HIC4", "3141 м/с²"), ("HIC5", "5161 м/с²"),
-            ("HIC6", "7181 м/с²"), ("HIC7", "9202 м/с²")
-        ]
+        self.down_panel = QListWidget()
 
-        self.down_panel = ResponsiveTableWidget(data)
-        self.down_panel.setStyleSheet("background-color: white;")
+        self.down_panel.setStyleSheet("""
+            QListWidget {
+                border: none;
+                background-color: #f0f0f0;
+                padding: 0px;
+            }
+            QListWidget::item {
+                border: 1px solid #cccccc;
+                margin: 2px;
+                padding: 0px;
+                background-color: white;
+                border-radius: 4px;
+            }
+        """)
+        self.down_panel_widgets = {}
+        special_list_item = self.add_down_item("Метрики безопасности", {})
+        self.down_panel_widgets['special'] = special_list_item
+
+        # self.add_down_item("title", data)
+        # self.add_down_item("title", data)
+
+        # self.down_panel = ResponsiveTableWidget(data)
+        # self.down_panel.setStyleSheet("background-color: white;")
 
         # Оборачиваем её в QScrollArea
         scroll_area = QScrollArea()
@@ -188,6 +79,7 @@ class ExperimentWindow(QMainWindow):
         self.min_column_width = 200
         # Фиксируем минимальное количество колонок
         self.down_panel.setMinimumWidth(self.min_column_width * 3)
+
 
         # Стиль для ScrollArea
         scroll_area.setStyleSheet("""
@@ -211,7 +103,6 @@ class ExperimentWindow(QMainWindow):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left_splitter)
         splitter.addWidget(right_panel)
-
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 1)
 
@@ -219,8 +110,24 @@ class ExperimentWindow(QMainWindow):
 
         main_widget.setLayout(layout)
         apply_styles(self)
+
         self.create_menu()
     
+    def add_down_item(self, title, data):
+        item = QListWidgetItem(self.down_panel)
+    
+        widget = ListItemWidget(title, data)
+        
+        # Устанавливаем размер элемента под содержимое
+        widget_size = widget.sizeHint()
+        item.setSizeHint(widget_size)
+
+        self.down_panel.addItem(item)
+        self.down_panel.setItemWidget(item, widget)
+        print("in adding", self.down_panel.item(0))
+        return item
+
+
     def create_menu(self):
         # Получаем строку меню
         menu_bar = self.menuBar()
@@ -235,7 +142,9 @@ class ExperimentWindow(QMainWindow):
         sound_action = menu_data.addAction("Звук")
 
         self.menu_plots = menu_bar.addMenu("Графики")
-        self.create_menu_plot()
+        
+        self.menu_metrics = menu_bar.addMenu("Метрики")
+        self.create_menu_plot_metrics()
         
         # ==== Меню "Помощь" ====
         help_menu = menu_bar.addMenu("Помощь")
@@ -244,13 +153,16 @@ class ExperimentWindow(QMainWindow):
         about_action = help_menu.addAction("О программе")
         about_action.triggered.connect(self.about_program)
     
-    def create_menu_plot(self):
+    
+    def create_menu_plot_metrics(self):
         files = load_experiments(os.path.join(self.path, "info.json"))
         if not files: return 
         files = files['experiment_data']
         self.menu_plots.clear()
+        self.menu_metrics.clear()
         for fil in files:
             file_menu = self.menu_plots.addMenu(fil['name'])
+            file_metric_menu = self.menu_metrics.addMenu(fil['name'])
             with open(fil['path']) as f:
                 cols = f.readline().strip().split(',')
             for c in cols:
@@ -258,9 +170,57 @@ class ExperimentWindow(QMainWindow):
                 col_act.setCheckable(True)
                 col_act.setChecked(False)
                 col_act.triggered.connect(lambda s, c=c, fil=fil: self.show_plot(s, fil, c))
+
+                col_metric_menu = file_metric_menu.addMenu(c)
+                for metric in self.possible_metrics:
+                    met_act = col_metric_menu.addAction(metric)
+                    met_act.triggered.connect(lambda s, fil=fil, c=c, metric_name=metric, metric_function=self.possible_metrics[metric]: 
+                                              self.add_metric_to_menu(s, fil, c, metric_name, metric_function))
+                    met_act.setCheckable(True)
+                    met_act.setChecked(False)
+                    
+    def add_metric_to_menu(self, state, fil, c, metric_name, metric_function):
+               
+        if state:
+            if fil['name'] not in self.down_panel_widgets:
+                self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], {})
+            
+            # Get current widget
+            cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[fil['name']])
+            data = cur_widget.data.copy()
+
+            # delete widget and list item
+            row = self.down_panel.row(self.down_panel_widgets[fil['name']])
+            cur_widget.deleteLater()
+            self.down_panel.takeItem(row)
+
+            # update data and create new list item
+            data[f"{c}_{metric_name}"] = metric_function(self.get_data(fil['path'], c))
+            self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data)
+        
+        else:
+            # Get current widget
+            cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[fil['name']])
+            data = cur_widget.data.copy()
+            
+            # delete widget and list item
+            row = self.down_panel.row(self.down_panel_widgets[fil['name']])
+            cur_widget.deleteLater()
+            self.down_panel.takeItem(row)
+
+            # update data and create new list item
+            if f"{c}_{metric_name}" in data:
+                del data[f"{c}_{metric_name}"]
+            if data:
+                self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data)
+
+    def get_data(self, path, col):
+        data = read_csv(path)[col]
+        return data.to_numpy()
+
     def show_plot(self, state, info, col):
         if state:
-            data = read_csv(info['path'])[col]
+            data = self.get_data(info['path'], col)
             item = QListWidgetItem(self.list_widget)
             widget = ChartItemWidget(f"{info['name']}-{col}", data)
             item.setSizeHint(widget.sizeHint())
