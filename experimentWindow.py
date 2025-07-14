@@ -115,8 +115,8 @@ class ExperimentWindow(QMainWindow):
 
         self.create_menu()
     
-    def add_down_item(self, title, data):
-        item = QListWidgetItem(self.down_panel)
+    def add_down_item(self, title, data, row=-1):
+        item = QListWidgetItem()
     
         widget = ListItemWidget(title, data)
         
@@ -124,8 +124,12 @@ class ExperimentWindow(QMainWindow):
         widget_size = widget.sizeHint()
         item.setSizeHint(widget_size)
 
-        self.down_panel.addItem(item)
+        if row != -1:
+            self.down_panel.insertItem(row, item)
+        else:
+            self.down_panel.addItem(item)
         self.down_panel.setItemWidget(item, widget)
+
         return item
     
     
@@ -202,13 +206,13 @@ class ExperimentWindow(QMainWindow):
             data = cur_widget.data.copy()
 
             # delete widget and list item
-            row = self.down_panel.row(self.down_panel_widgets[fil['name']])
+            row = self.down_panel.row(self.down_panel_widgets[fil['name']]) # get the index of the element
             cur_widget.deleteLater()
             self.down_panel.takeItem(row)
 
             # update data and create new list item
             data[f"{c}_{metric_name}"] = metric_function(self.get_data(fil['path'], c))
-            self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data)
+            self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data, row)
             self.chosen_metrics.append(f"{fil['name']}-{c}-{metric_name}")
         
         else:
@@ -226,7 +230,7 @@ class ExperimentWindow(QMainWindow):
             if f"{c}_{metric_name}" in data:
                 del data[f"{c}_{metric_name}"]
             if data:
-                self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data)
+                self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data, row)
             
 
     def get_data(self, path, col):

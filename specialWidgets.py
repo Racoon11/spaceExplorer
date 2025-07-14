@@ -61,7 +61,7 @@ class ResponsiveTableWidget(QWidget):
             frame_layout = QVBoxLayout(frame)
             frame_layout.addWidget(label)
             frame_layout.setContentsMargins(4, 4, 4, 4)
-            # frame.setMinimumHeight(50)
+            frame.setMinimumHeight(30)
 
             self.layout.addWidget(frame, row, col)
 
