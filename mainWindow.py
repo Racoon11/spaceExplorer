@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
         os.makedirs(os.path.join(folder_path, 'data'))        
                 
         save_experiments(experiment_data, "data/experiments.json")
-        window.show_expermient_window(name, path)
+        window.show_expermient_window(name, folder_path)
         
     def show_expermient_window(self, name, path):
         self.close()

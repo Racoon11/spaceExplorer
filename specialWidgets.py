@@ -45,7 +45,6 @@ class ResponsiveTableWidget(QWidget):
 
     def populate(self):
         """Очистка и заполнение таблицы"""
-        print("populate", self.data)
         self.clear_layout(self.layout)
 
         available_width = self.width()
@@ -62,7 +61,7 @@ class ResponsiveTableWidget(QWidget):
             frame_layout = QVBoxLayout(frame)
             frame_layout.addWidget(label)
             frame_layout.setContentsMargins(4, 4, 4, 4)
-            frame.setMinimumHeight(50)
+            # frame.setMinimumHeight(50)
 
             self.layout.addWidget(frame, row, col)
 
@@ -102,7 +101,9 @@ class ListItemWidget(QWidget):
 
         # Заголовок
         self.title_label = QLabel(title)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.title_label.setStyleSheet("""font-weight: bold; font-size: 14px; padding: 5px;
+                min-height: 20px;
+                max-height: 20px;""")
         self.layout.addWidget(self.title_label)
 
         # Таблица с данными
@@ -127,7 +128,9 @@ class ListItemWidget(QWidget):
 
         # Заголовок
         self.title_label = QLabel(self.title)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.title_label.setStyleSheet("""font-weight: bold; font-size: 14px; padding: 5px;
+                min-height: 20px;
+                max-height: 20px;""")
         self.layout.addWidget(self.title_label)
 
         # Таблица с данными

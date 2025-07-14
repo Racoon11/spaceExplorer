@@ -16,7 +16,6 @@ from myjson import *
 from specialWidgets import *
 
 
-
 # Основное окно
 class ExperimentWindow(QMainWindow):
     def __init__(self, name, path):
@@ -24,10 +23,13 @@ class ExperimentWindow(QMainWindow):
 
         self.name = name
         self.path = path
+        self.info_file_path = os.path.join(self.path, "info.json")
         self.chosen_plots = []
+        self.chosen_metrics = []
         self.possible_metrics = {"max": max, "min": min, "mean": lambda x: round(sum(x)/len(x), 4)}
         self.basic_metrics = ['max', 'min', 'mean']
         self.setWindowTitle(f"Space explorer ({name})")
+        
 
         # self.setGeometry(200, 200, 800, 600)
 
@@ -124,10 +126,9 @@ class ExperimentWindow(QMainWindow):
 
         self.down_panel.addItem(item)
         self.down_panel.setItemWidget(item, widget)
-        print("in adding", self.down_panel.item(0))
         return item
-
-
+    
+    
     def create_menu(self):
         # Получаем строку меню
         menu_bar = self.menuBar()
@@ -157,7 +158,10 @@ class ExperimentWindow(QMainWindow):
     def create_menu_plot_metrics(self):
         files = load_experiments(os.path.join(self.path, "info.json"))
         if not files: return 
+        plots = [] if 'plots' not in files else files['plots']
+        metrics = [] if 'metrics' not in files else files['metrics']
         files = files['experiment_data']
+
         self.menu_plots.clear()
         self.menu_metrics.clear()
         for fil in files:
@@ -168,18 +172,26 @@ class ExperimentWindow(QMainWindow):
             for c in cols:
                 col_act = file_menu.addAction(c)
                 col_act.setCheckable(True)
-                col_act.setChecked(False)
+                if f"{fil['name']}-{c}" in plots:
+                    col_act.setChecked(True)
+                    self.show_plot(True, fil, c)
+                else:
+                    col_act.setChecked(False)
                 col_act.triggered.connect(lambda s, c=c, fil=fil: self.show_plot(s, fil, c))
 
                 col_metric_menu = file_metric_menu.addMenu(c)
                 for metric in self.possible_metrics:
                     met_act = col_metric_menu.addAction(metric)
                     met_act.triggered.connect(lambda s, fil=fil, c=c, metric_name=metric, metric_function=self.possible_metrics[metric]: 
-                                              self.add_metric_to_menu(s, fil, c, metric_name, metric_function))
+                                              self.add_metric_to_panel(s, fil, c, metric_name, metric_function))
                     met_act.setCheckable(True)
-                    met_act.setChecked(False)
+                    if f"{fil['name']}-{c}-{metric}" in metrics:
+                        met_act.setChecked(True)
+                        self.add_metric_to_panel(True, fil, c, metric, self.possible_metrics[metric])
+                    else:
+                        met_act.setChecked(False)
                     
-    def add_metric_to_menu(self, state, fil, c, metric_name, metric_function):
+    def add_metric_to_panel(self, state, fil, c, metric_name, metric_function):
                
         if state:
             if fil['name'] not in self.down_panel_widgets:
@@ -197,12 +209,14 @@ class ExperimentWindow(QMainWindow):
             # update data and create new list item
             data[f"{c}_{metric_name}"] = metric_function(self.get_data(fil['path'], c))
             self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data)
+            self.chosen_metrics.append(f"{fil['name']}-{c}-{metric_name}")
         
         else:
             # Get current widget
             cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[fil['name']])
             data = cur_widget.data.copy()
-            
+            self.chosen_metrics.remove(f"{fil['name']}-{c}-{metric_name}")
+
             # delete widget and list item
             row = self.down_panel.row(self.down_panel_widgets[fil['name']])
             cur_widget.deleteLater()
@@ -213,6 +227,7 @@ class ExperimentWindow(QMainWindow):
                 del data[f"{c}_{metric_name}"]
             if data:
                 self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data)
+            
 
     def get_data(self, path, col):
         data = read_csv(path)[col]
@@ -240,4 +255,33 @@ class ExperimentWindow(QMainWindow):
     
     def about_program(self):
         QMessageBox.about(self, "О программе", "Это простое приложение с меню на PyQt6")
+    
+
+    def save_data(self):
+        """Сохранение данных, например, в JSON-файл"""
+        data_to_save = load_experiments(os.path.join(self.path, "info.json"))
+        data_to_save['plots'] = self.chosen_plots
+        data_to_save['metrics'] = self.chosen_metrics
+        save_experiments(data_to_save, os.path.join(self.path, "info.json"))
+
+    def closeEvent(self, event):
+        """
+        Сохранение данных перед закрытием окна
+        """
+        reply = QMessageBox.question(
+            self,
+            'Выход',
+            "Вы хотите сохранить данные перед выходом?",
+            QMessageBox.StandardButton.Yes |
+            QMessageBox.StandardButton.No |
+            QMessageBox.StandardButton.Cancel
+        )
+
+        if reply == QMessageBox.StandardButton.Cancel:
+            event.ignore()  # Отмена закрытия
+        else:
+            if reply == QMessageBox.StandardButton.Yes:
+                self.save_data()
+
+            event.accept()  # Разрешаем закрытие окна
 
