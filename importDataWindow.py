@@ -116,7 +116,7 @@ class ImportDataWindow(QWidget):
                 experiment_data = {"experiment_data": []}
             experiment_data['experiment_data'].append({"name": name, 'type': selected_type, 'path': new_file_path})
             save_experiments(experiment_data, info_file_path)
-            self.experimentWindow.create_menu_plot()
+            self.experimentWindow.create_menu_plot_metrics()
             self.list_widget.addItem(item_text)
             self.file_path_edit.clear()
             self.type_combo.setCurrentIndex(0)
