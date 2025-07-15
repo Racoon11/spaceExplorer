@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QMessageBox, QMainWindow, QVBoxLayout, QListWidgetItem, 
                              QFrame, QSplitter, 
                              QScrollArea)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 
 from pandas import read_csv
 
@@ -30,7 +30,6 @@ class ExperimentWindow(QMainWindow):
         self.basic_metrics = ['max', 'min', 'mean']
         self.setWindowTitle(f"Space explorer ({name})")
         
-
         # self.setGeometry(200, 200, 800, 600)
 
         main_widget = QWidget()
@@ -242,7 +241,7 @@ class ExperimentWindow(QMainWindow):
             data = self.get_data(info['path'], col)
             item = QListWidgetItem(self.list_widget)
             widget = ChartItemWidget(f"{info['name']}-{col}", data)
-            item.setSizeHint(widget.sizeHint())
+            item.setSizeHint(QSize(widget.width(), 200)) 
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, widget)
             self.chosen_plots.append(f"{info['name']}-{col}")

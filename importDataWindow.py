@@ -1,9 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit, QVBoxLayout, QFileDialog, QComboBox, QHBoxLayout, QListWidget
 from PyQt5.QtGui import QPixmap
+from pandas import read_csv
 
 import os
-import sys
-import resources
 import shutil
 
 from styles import *
@@ -30,7 +29,7 @@ class ImportDataWindow(QWidget):
         # Выбор типа датчика
         self.type_label = QLabel("Выберите датчик:")
         self.type_combo = QComboBox()
-        self.type_combo.addItems(['-'] + list(map(str, range(1, 12))))
+        self.type_combo.addItems(['-', 'arduino'] + list(map(str, range(1, 12))))
 
         # Отображение изображения
         self.image_label = QLabel(self)
@@ -116,12 +115,23 @@ class ImportDataWindow(QWidget):
                 experiment_data = {"experiment_data": []}
             experiment_data['experiment_data'].append({"name": name, 'type': selected_type, 'path': new_file_path})
             save_experiments(experiment_data, info_file_path)
+            self.add_metrics_to_file(name, new_file_path)
             self.experimentWindow.create_menu_plot_metrics()
             self.list_widget.addItem(item_text)
             self.file_path_edit.clear()
             self.type_combo.setCurrentIndex(0)
+            
+    def add_metrics_to_file(self, name, path):
+        files = load_experiments(os.path.join(self.experimentWindow.path, "info.json"))
+        metrics = [] if 'metrics' not in files else files['metrics']
+        with open(path) as f:
+            cols = f.readline().strip().split(',')
+        for col in cols:
+            for metric in self.experimentWindow.basic_metrics:
+                metrics.append(f"{name}-{col}-{metric}")
+        files['metrics'] = metrics
+        save_experiments(files, os.path.join(self.experimentWindow.path, "info.json"))
 
-        print("Выбранный тип:", selected_type)
-        print("Путь к файлу:", file_path)
+        
 
         # Здесь можно добавить логику сохранения данных в файл или базу данных

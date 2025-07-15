@@ -2,11 +2,14 @@ from PyQt5.QtWidgets import (QVBoxLayout, QFrame, QSizePolicy, QGridLayout,
                              QWidget, QLabel)
 from PyQt5.QtCore import Qt, QTimer
 
+import pyqtgraph as pg
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 
+pg.setConfigOption('background', 'white')
+pg.setConfigOption('foreground', 'black')
 
 class ResponsiveTableWidget(QWidget):
     def __init__(self, data, parent=None):
@@ -140,48 +143,87 @@ class ListItemWidget(QWidget):
         self.update()
 
 
+# class ChartItemWidget(QWidget):
+#     def __init__(self, title, data, parent=None):
+#         super().__init__(parent)
+
+#         self.title = title
+#         self.data = data
+#         layout = QVBoxLayout(self)
+#         layout.setContentsMargins(0, 0, 0, 0)
+#         layout.setSpacing(0)
+
+#         # Заголовок
+#         # self.label = QLabel(title)
+#         # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+#         # layout.addWidget(self.label)
+
+#         # График
+#         self.figure = Figure(figsize=(5, 2), dpi=100)
+#         self.canvas = FigureCanvas(self.figure)
+#         self.toolbar = NavigationToolbar(self.canvas, self)
+
+#         self.canvas.setSizePolicy(
+#             QSizePolicy.Policy.Expanding,
+#             QSizePolicy.Policy.Expanding
+#         )
+#         layout.addWidget(self.toolbar)
+#         layout.addWidget(self.canvas)
+
+#         self.plot()
+
+#     def plot(self):
+#         ax = self.figure.add_subplot(111)
+#         ax.clear()
+#         ax.plot(self.data, label=self.title)
+#         # ax.set_title("График")
+#         ax.set_xlabel("Время")
+#         ax.legend(loc="upper right")
+#         ax.grid(True)
+#         self.canvas.draw()
+#         self.figure.tight_layout()
+#         self.canvas.updateGeometry()
+
+    # def resizeEvent(self, event):
+    #     """Перерисовываем график при изменении размера виджета"""
+    #     self.canvas.resize(event.size())
+    #     self.canvas.draw()
+
 class ChartItemWidget(QWidget):
     def __init__(self, title, data, parent=None):
         super().__init__(parent)
 
         self.title = title
         self.data = data
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Заголовок
-        # self.label = QLabel(title)
-        # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # layout.addWidget(self.label)
+        # Заголовок (опционально можно раскомментировать)
+        self.label = QLabel(title)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.label)
 
-        # График
-        self.figure = Figure(figsize=(5, 2), dpi=100)
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
+        # График с pyqtgraph
+        self.plot_widget = pg.PlotWidget()
+        layout.addWidget(self.plot_widget)
 
-        self.canvas.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Expanding
+        # Настройки графика
+        self.plot_item = self.plot_widget.getPlotItem()
+        self.plot_item.setLabel('bottom', 'Время')
+        self.plot_item.addLegend()
+
+        self.curve = self.plot_item.plot(
+            self.data,
+            name=self.title,
+            pen = pg.mkPen(color='#007acc', width=2, style=Qt.PenStyle.SolidLine)
         )
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.canvas)
+        self.setFixedHeight(200) 
 
+        # Сразу строим график
         self.plot()
 
     def plot(self):
-        ax = self.figure.add_subplot(111)
-        ax.clear()
-        ax.plot(self.data, label=self.title)
-        # ax.set_title("График")
-        ax.set_xlabel("Время")
-        ax.legend()
-        ax.grid(True)
-        self.canvas.draw()
-        self.figure.tight_layout()
-        self.canvas.updateGeometry()
-
-    # def resizeEvent(self, event):
-    #     """Перерисовываем график при изменении размера виджета"""
-    #     self.canvas.resize(event.size())
-    #     self.canvas.draw()
+        """Обновляет данные графика"""
+        self.curve.setData(self.data)
