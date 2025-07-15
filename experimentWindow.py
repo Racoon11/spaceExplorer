@@ -172,7 +172,13 @@ class ExperimentWindow(QMainWindow):
             file_metric_menu = self.menu_metrics.addMenu(fil['name'])
             with open(fil['path']) as f:
                 cols = f.readline().strip().split(',')
-            for c in cols:
+                lines = f.readline().split(',')
+            for c, line in zip(cols, lines):
+                try:
+                    float(line)
+                except Exception as e:
+                    print(e)
+                    continue
                 col_act = file_menu.addAction(c)
                 col_act.setCheckable(True)
                 if f"{fil['name']}-{c}" in plots:
