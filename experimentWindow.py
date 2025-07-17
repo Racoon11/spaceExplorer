@@ -14,6 +14,7 @@ from importDataWindow import *
 from styles import *
 from myjson import *
 from specialWidgets import *
+from criterions import *
 
 
 # Основное окно
@@ -28,6 +29,15 @@ class ExperimentWindow(QMainWindow):
         self.chosen_metrics = []
         self.possible_metrics = {"max": max, "min": min, "mean": lambda x: round(sum(x)/len(x), 4)}
         self.basic_metrics = ['max', 'min', 'mean']
+        self.special_metrics = {"HIC₁₅": {"function": lambda data: round(calculate_HIC(data[0]['millisecs']/1000, 
+                                                                                 np.array([data[0]['AX'], data[0]['AY'], data[0]['AZ']]))[0], 1), 
+                                          "norm": 250, "info": "Критерий повреждения головы", "sensors": [1]}, 
+                                "N": {"function": lambda data: round(calculate_N(data[0]["millisecs"]/1000, 
+                                                                           np.array([data[0]['AX'], data[0]['AY'], data[0]['AZ']])), 1), 
+                                      'norm': -1, "info": "Скорость нарастания перегрузки", "sensors": [1]},
+                                "CWVP": {"function": lambda data: round(calculate_CWVP(data[0]["millisecs"]/1000, data[0]['AX'], data[0]['AY'], data[0]['AZ']), 1), 
+                                         "norm": 3.6, "info": "Скорость стенки грудной клетки", "sensors": [4]},
+                                }
         self.setWindowTitle(f"Space explorer ({name})")
         
         # self.setGeometry(200, 200, 800, 600)
@@ -64,7 +74,7 @@ class ExperimentWindow(QMainWindow):
         """)
         self.down_panel_widgets = {}
         special_list_item = self.add_down_item("Метрики безопасности", {})
-        self.down_panel_widgets['special'] = special_list_item
+        self.down_panel_widgets['Метрики безопасности'] = special_list_item
 
         # self.add_down_item("title", data)
         # self.add_down_item("title", data)
@@ -167,6 +177,19 @@ class ExperimentWindow(QMainWindow):
 
         self.menu_plots.clear()
         self.menu_metrics.clear()
+
+        special_menu = self.menu_metrics.addMenu("Метрики безопасности")
+        for metric in self.special_metrics:
+            special_action = special_menu.addAction(metric)
+            special_action.triggered.connect(lambda s, metric_name=metric: 
+                                              self.add_special_metric(s, metric_name))
+            special_action.setCheckable(True)
+            if f"Метрики безопасности-{metric}" in metrics:
+                special_action.setChecked(True)
+                self.add_special_metric(True, metric)
+            else:
+                special_action.setChecked(False)
+
         for fil in files:
             file_menu = self.menu_plots.addMenu(fil['name'])
             file_metric_menu = self.menu_metrics.addMenu(fil['name'])
@@ -199,44 +222,58 @@ class ExperimentWindow(QMainWindow):
                         self.add_metric_to_panel(True, fil, c, metric, self.possible_metrics[metric])
                     else:
                         met_act.setChecked(False)
-                    
-    def add_metric_to_panel(self, state, fil, c, metric_name, metric_function):
-               
+    
+    def add_metric_from_data(self, state, name, metric_name, value):
         if state:
-            if fil['name'] not in self.down_panel_widgets:
-                self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], {})
-            
+            if name not in self.down_panel_widgets:
+                 self.down_panel_widgets[name] = self.add_down_item(name, {})
             # Get current widget
-            cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[fil['name']])
+            cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[name])
             data = cur_widget.data.copy()
 
             # delete widget and list item
-            row = self.down_panel.row(self.down_panel_widgets[fil['name']]) # get the index of the element
+            row = self.down_panel.row(self.down_panel_widgets[name]) # get the index of the element
             cur_widget.deleteLater()
             self.down_panel.takeItem(row)
 
             # update data and create new list item
-            data[f"{c}_{metric_name}"] = metric_function(self.get_data(fil['path'], c))
-            self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data, row)
-            self.chosen_metrics.append(f"{fil['name']}-{c}-{metric_name}")
-        
+            data[metric_name] = value
+            self.down_panel_widgets[name] = self.add_down_item(name, data, row)
+            self.chosen_metrics.append(f"{name}-{metric_name}")
         else:
             # Get current widget
-            cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[fil['name']])
+            cur_widget = self.down_panel.itemWidget(self.down_panel_widgets[name])
             data = cur_widget.data.copy()
-            self.chosen_metrics.remove(f"{fil['name']}-{c}-{metric_name}")
+            self.chosen_metrics.remove(f"{name}-{metric_name}")
 
             # delete widget and list item
-            row = self.down_panel.row(self.down_panel_widgets[fil['name']])
+            row = self.down_panel.row(self.down_panel_widgets[name])
             cur_widget.deleteLater()
             self.down_panel.takeItem(row)
 
             # update data and create new list item
-            if f"{c}_{metric_name}" in data:
-                del data[f"{c}_{metric_name}"]
+            if metric_name in data:
+                del data[metric_name]
             if data:
-                self.down_panel_widgets[fil['name']] = self.add_down_item(fil['name'], data, row)
-            
+                self.down_panel_widgets[name] = self.add_down_item(name, data, row)
+    
+    def add_special_metric(self, state, metric_name):
+        sensors = self.special_metrics[metric_name]['sensors']
+        data = []
+        files = load_experiments(self.info_file_path)['experiment_data']
+        for s in sensors:
+            sens_files = list(filter(lambda x: x['name'] == str(s), files))
+            if not sens_files: return 
+            data.append(read_csv(sens_files[0]['path']))
+        
+        value = f"{self.special_metrics[metric_name]['function'](data)}"
+        if self.special_metrics[metric_name]['norm'] != -1:
+            value = f"{self.special_metrics[metric_name]['function'](data)} ({self.special_metrics[metric_name]['norm']})"
+        self.add_metric_from_data(state, 'Метрики безопасности', metric_name, value)
+
+    def add_metric_to_panel(self, state, fil, c, metric_name, metric_function):
+        value = metric_function(self.get_data(fil['path'], c))
+        self.add_metric_from_data(state, fil['name'], f"{c}-{metric_name}", value)        
 
     def get_data(self, path, col):
         data = read_csv(path)[col]

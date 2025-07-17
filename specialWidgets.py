@@ -143,52 +143,6 @@ class ListItemWidget(QWidget):
         self.update()
 
 
-# class ChartItemWidget(QWidget):
-#     def __init__(self, title, data, parent=None):
-#         super().__init__(parent)
-
-#         self.title = title
-#         self.data = data
-#         layout = QVBoxLayout(self)
-#         layout.setContentsMargins(0, 0, 0, 0)
-#         layout.setSpacing(0)
-
-#         # Заголовок
-#         # self.label = QLabel(title)
-#         # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-#         # layout.addWidget(self.label)
-
-#         # График
-#         self.figure = Figure(figsize=(5, 2), dpi=100)
-#         self.canvas = FigureCanvas(self.figure)
-#         self.toolbar = NavigationToolbar(self.canvas, self)
-
-#         self.canvas.setSizePolicy(
-#             QSizePolicy.Policy.Expanding,
-#             QSizePolicy.Policy.Expanding
-#         )
-#         layout.addWidget(self.toolbar)
-#         layout.addWidget(self.canvas)
-
-#         self.plot()
-
-#     def plot(self):
-#         ax = self.figure.add_subplot(111)
-#         ax.clear()
-#         ax.plot(self.data, label=self.title)
-#         # ax.set_title("График")
-#         ax.set_xlabel("Время")
-#         ax.legend(loc="upper right")
-#         ax.grid(True)
-#         self.canvas.draw()
-#         self.figure.tight_layout()
-#         self.canvas.updateGeometry()
-
-    # def resizeEvent(self, event):
-    #     """Перерисовываем график при изменении размера виджета"""
-    #     self.canvas.resize(event.size())
-    #     self.canvas.draw()
-
 class ChartItemWidget(QWidget):
     def __init__(self, title, data, parent=None):
         super().__init__(parent)

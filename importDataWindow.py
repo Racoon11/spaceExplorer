@@ -179,9 +179,16 @@ class ImportDataWindow(QWidget):
     def add_metrics_to_file(self, name, path):
         files = load_experiments(os.path.join(self.experimentWindow.path, "info.json"))
         metrics = [] if 'metrics' not in files else files['metrics']
+        file_names = [d['name'] for d in files['experiment_data']]
         with open(path) as f:
             cols = f.readline().strip().split(',')
             lines = f.readline().split(',')
+            
+        for metric in self.experimentWindow.special_metrics:
+            if f'special-{metric}' in metrics: continue
+            elif all( t in file_names for t in self.experimentWindow.special_metrics[metric]["sensors"] ):
+                metrics.append(f'special-{metric}')
+
         for col, line in zip(cols, lines):
             try:
                 float(line)
